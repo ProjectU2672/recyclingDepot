@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+    </head>
+    <body>
+        <h4>Websocket test</h4>
+        <input type="text" id="message">
+        <div id="log"></div>
+        <script>
+			var logs = document.getElementById("log");
+			var msgInput = document.getElementById("message");
+			function addLog(message) {
+				logs.innerHTML = "<p>" + message + "</p>" + logs.innerHTML;
+			}
+			(function() {
+				msgInput.onkeydown = function(event) {
+					if(event.keyCode == 13) {
+						addLog(msgInput.value);
+						msgInput.value = "";
+					}
+				};
+				msgInput.focus();
+			})();
+		</script>
+    </body>
+</html>

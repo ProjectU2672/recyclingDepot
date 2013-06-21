@@ -2,12 +2,9 @@ package main
 
 import (
     "fmt"
+    "strings"
     "net/http"
     "code.google.com/p/go.net/websocket"
-    "strings"
-//    "encoding/json"
-//    "io"
-//    "log"
 )
 
 type Message struct {
@@ -17,11 +14,22 @@ type Message struct {
 func EchoServer(ws *websocket.Conn) {
     var m Message
     for {
+        // Get message from client:
         if err := websocket.JSON.Receive(ws, &m); err != nil {
             fmt.Println("Receive error: " + err.Error())
             continue
         }
+
+        // rape it:
+        old := m.Message
+        m.Message = ""
+        n := len(old)
+        for i := 0; i < n; i++ {
+            m.Message += old[(n-i-1):(n-i)]
+        }
         m.Message = strings.ToUpper(m.Message)
+
+        // Send it back:
         if err := websocket.JSON.Send(ws, m); err != nil {
             fmt.Println("Send error: " + err.Error())
         }

@@ -5,9 +5,9 @@ import (
     "net/http"
     "code.google.com/p/go.net/websocket"
     "strings"
-    "encoding/json"
-    "io"
-    "log"
+//    "encoding/json"
+//    "io"
+//    "log"
 )
 
 type Message struct {
@@ -16,22 +16,15 @@ type Message struct {
 
 func EchoServer(ws *websocket.Conn) {
     var m Message
-    dec := json.NewDecoder(ws)
     for {
-        if err := dec.Decode(&m); err == io.EOF {
-            fmt.Println("decoder got EOF")
-        } else if err != nil {
-            log.Fatal(err)
+        if err := websocket.JSON.Receive(ws, &m); err != nil {
+            fmt.Println("Receive error: " + err.Error())
             continue
         }
-        go func() {
-            m.Message = strings.ToUpper(m.Message)
-            b, err := json.Marshal(m)
-            if err != nil {
-                fmt.Println("Marshal error: " + err.Error())
-            }
-            ws.Write(b)
-        }()
+        m.Message = strings.ToUpper(m.Message)
+        if err := websocket.JSON.Send(ws, m); err != nil {
+            fmt.Println("Send error: " + err.Error())
+        }
     }
 }
 

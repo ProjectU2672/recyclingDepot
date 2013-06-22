@@ -8,47 +8,47 @@
         <input type="text" id="message" value="Connecting..." disabled>
         <div id="log"></div>
         <script>
-			var logs = document.getElementById("log");
-			var msgInput = document.getElementById("message");
+            var logs = document.getElementById("log");
+            var msgInput = document.getElementById("message");
             var wsUriInput = document.getElementById("wsstring");
             var connCount = document.getElementById("count");
-			function addLog(message) {
-				logs.innerHTML = "<p>" + message + "</p>" + logs.innerHTML;
-			}
-			msgInput.onkeydown = function(event) {
-				if(event.keyCode == 13) {
-					ws.send(JSON.stringify({message:msgInput.value}));
-					msgInput.value = "";
-				}
-			};
-			var ws = new WebSocket(location.href.replace(/^http/, "ws").replace(/\/*$/, "/echo"), ["proto1", "proto2"]);
-			ws.onopen = function() {
+            function addLog(message) {
+                logs.innerHTML = "<p>" + message + "</p>" + logs.innerHTML;
+            }
+            msgInput.onkeydown = function(event) {
+                if(event.keyCode == 13) {
+                    ws.send(JSON.stringify({message:msgInput.value}));
+                    msgInput.value = "";
+                }
+            };
+            var ws = new WebSocket(location.href.replace(/^http/, "ws").replace(/\/*$/, "/echo"), ["proto1", "proto2"]);
+            ws.onopen = function() {
                 msgInput.value = "";
                 msgInput.disabled = false;
-			};
-			ws.onerror = function(event) {
-				console.log(event);
+            };
+            ws.onerror = function(event) {
+                console.log(event);
                 addLog("Error");
                 msgInput.value = "Error";
                 msgInput.disabled = true;
-			};
-			ws.onmessage = function(event) {
-				console.log(event.data);
+            };
+            ws.onmessage = function(event) {
+                console.log(event.data);
                 var d = JSON.parse(event.data);
                 if(d.action == "message") {
-				    addLog(d.message);
-                } else if(d.action == "status") {
+                    addLog(d.message);
+                    } else if(d.action == "status") {
                     connCount.innerHTML = d.count;
                 }
-			};
+            };
             ws.onclose = function(event) {
                 console.log(event);
                 msgInput.value = "Closed";
                 msgInput.disabled = true;
             };
-			(function() {
-				msgInput.focus();
-			})();
-		</script>
+            (function() {
+                msgInput.focus();
+            })();
+        </script>
     </body>
 </html>

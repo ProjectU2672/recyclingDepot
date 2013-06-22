@@ -4,13 +4,14 @@
         <meta charset="utf-8">
     </head>
     <body>
-        <h4>Websocket test</h4>
+        <h4>Websocket test (connections: <span id="count">0</span>)</h4>
         <input type="text" id="message" value="Connecting..." disabled>
         <div id="log"></div>
         <script>
 			var logs = document.getElementById("log");
 			var msgInput = document.getElementById("message");
-			var wsUriInput = document.getElementById("wsstring");
+            var wsUriInput = document.getElementById("wsstring");
+            var connCount = document.getElementById("count");
 			function addLog(message) {
 				logs.innerHTML = "<p>" + message + "</p>" + logs.innerHTML;
 			}
@@ -32,9 +33,13 @@
                 msgInput.disabled = true;
 			};
 			ws.onmessage = function(event) {
-				console.log(event);
-				var d = JSON.parse(event.data);
-				addLog(d.message);
+				console.log(event.data);
+                var d = JSON.parse(event.data);
+                if(d.action == "message") {
+				    addLog(d.message);
+                } else if(d.action == "status") {
+                    connCount.innerHTML = d.count;
+                }
 			};
             ws.onclose = function(event) {
                 console.log(event);

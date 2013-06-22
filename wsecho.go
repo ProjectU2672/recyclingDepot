@@ -1,5 +1,5 @@
 package main
-
+// FIXME race conditions!
 import (
     "fmt"
     "io"
@@ -9,23 +9,35 @@ import (
 )
 
 type Message struct {
-    Message string `json:"message"`
-}
-type Action struct {
     Action string `json:"action"`
+    Message string `json:"message"`
+    Count uint `json:"count"`
 }
 
-var queue chan Message = make(chan Message)
-var conns map[*websocket.Conn]bool = make(map[*websocket.Conn]bool)
+var(
+    queue chan Message = make(chan Message)
+    conns map[*websocket.Conn]bool = make(map[*websocket.Conn]bool)
+    status Message = Message{Action: "status"}
+)
 
 func EchoServer(ws *websocket.Conn) {
-    var m Message
+    m := Message{Action: "message"}
     // Greeting:
-    if err := websocket.JSON.Send(ws, Message{Message: `<span style="font-size:2em;">♲ connected!</span>`}); err != nil {
+    m.Message = `<span style="font-size:2em;">♲ connected!</span>`
+    if err := websocket.JSON.Send(ws, m); err != nil {
         fmt.Println("Greeting failed: " + err.Error())
     }
+
     conns[ws] = true
-    defer delete(conns, ws)
+    status.Count++
+    queue <- status
+    defer func() {
+        delete(conns, ws)
+        ws.Close()
+        status.Count--
+        queue <- status
+    }()
+
     for {
         // Get message from client:
         if err := websocket.JSON.Receive(ws, &m); err == io.EOF {
@@ -35,13 +47,11 @@ func EchoServer(ws *websocket.Conn) {
         }
 
         // rape it:
-        old := m.Message
-        m.Message = ""
-        n := len(old)
-        for i := 0; i < n; i++ {
-            m.Message += old[(n-i-1):(n-i)]
+        runes := []rune(m.Message)
+        for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
+            runes[i], runes[j] = runes[j], runes[i]
         }
-        m.Message = strings.ToUpper(m.Message)
+        m.Message = strings.ToUpper(string(runes))
 
         // Send it back:
         queue <- m

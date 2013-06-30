@@ -21,7 +21,7 @@
                     msgInput.value = "";
                 }
             };
-            var ws = new WebSocket(location.href.replace(/^http/, "ws").replace(/\/*$/, "/echo"), ["proto1", "proto2"]);
+            var ws = new WebSocket(location.href.replace(/^http/, "ws").replace(/\/*$/, "/echo"), "u2672");
             ws.onopen = function() {
                 msgInput.value = "";
                 msgInput.disabled = false;

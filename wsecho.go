@@ -1,6 +1,5 @@
 package main
 
-// FIXME race conditions!
 import (
 	"code.google.com/p/go.net/websocket"
 	"fmt"
@@ -16,9 +15,11 @@ type Message struct {
 }
 
 var (
-	queue  chan Message             = make(chan Message)
-	conns  map[*websocket.Conn]bool = make(map[*websocket.Conn]bool)
-	status Message                  = Message{Action: "status"}
+	queue      chan Message             = make(chan Message)
+	register   chan *websocket.Conn     = make(chan *websocket.Conn)
+	unregister chan *websocket.Conn     = make(chan *websocket.Conn)
+	conns      map[*websocket.Conn]bool = make(map[*websocket.Conn]bool)
+	status     Message                  = Message{Action: "status"}
 )
 
 func EchoServer(ws *websocket.Conn) {
@@ -29,15 +30,7 @@ func EchoServer(ws *websocket.Conn) {
 		fmt.Println("Greeting failed: " + err.Error())
 	}
 
-	conns[ws] = true
-	status.Count++
-	queue <- status
-	defer func() {
-		delete(conns, ws)
-		ws.Close()
-		status.Count--
-		queue <- status
-	}()
+	register <- ws
 
 	for {
 		// Get message from client:
@@ -57,6 +50,7 @@ func EchoServer(ws *websocket.Conn) {
 		// Send it back:
 		queue <- m
 	}
+	unregister <- ws
 }
 
 func main() {
@@ -64,13 +58,30 @@ func main() {
 	http.Handle("/echo", websocket.Handler(EchoServer))
 
 	go func() {
-		for m := range queue {
-			for ws := range conns {
-				if err := websocket.JSON.Send(ws, m); err != nil {
-					fmt.Println("Send error: " + err.Error())
+		for {
+			select {
+			case m := <-queue:
+				for ws := range conns {
+					if err := websocket.JSON.Send(ws, m); err != nil {
+						fmt.Println("Send error: " + err.Error())
+					}
 				}
+			case c := <-register:
+				conns[c] = true
+				status.Count++
+				go func() {
+					queue <- status
+				}()
+			case c := <-unregister:
+				delete(conns, c)
+				status.Count--
+				go func() {
+					c.Close()
+					queue <- status
+				}()
 			}
 		}
+
 	}()
 
 	err := http.ListenAndServe(":12345", nil)

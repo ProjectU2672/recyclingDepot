@@ -10,8 +10,8 @@ import (
 
 type Message struct {
 	Action  string `json:"action"`
-	Message string `json:"message"`
-	Count   uint   `json:"count"`
+	Message string `json:"message,omitempty"`
+	Count   uint   `json:"count,omitempty"`
 }
 
 var (
